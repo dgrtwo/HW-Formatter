@@ -2,3 +2,5 @@
 WORKING_DIRECTORY
 examples
 build
+MANIFEST
+dist
