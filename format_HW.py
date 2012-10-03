@@ -12,6 +12,25 @@ import collections
 import pyPdf
 
 
+VERBATIM_TEMPLATE = r"""
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\begin{document}
+
+\setlength{\headheight}{15.2pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{%s: %s}
+
+\begin{verbatim}
+%s
+\end{verbatim}
+\end{document}
+"""
+
+
 LATEX_PROGRAMMING_TEMPLATE = r"""
 \documentclass{article}
 \usepackage{listings}
@@ -61,7 +80,7 @@ LATEX_PROGRAMMING_TEMPLATE = r"""
 # dictionary of extensions that this supports and the language of each
 EXTENSION_TO_LANGUAGE = {'cc': 'C++', 'c': 'C', 'R': 'R', 'php': 'PHP',
                          'rb': 'Ruby', 'cpp': 'C++', 'py': 'python',
-                         'pl': 'Perl', 'java': 'Java'}
+                         'pl': 'Perl', 'java': 'Java', 'txt': 'verbatim'}
 
 
 def append_pdf(input, output):
@@ -90,11 +109,12 @@ class PDFConverter(object):
         ext = os.path.splitext(infile)[1][1:]
         outfile = self.file_in_working_directory(infile, "pdf")
 
-        if ext == "pdf":
+        if ext.lower() == "pdf":
             # Already in PDF format- no need to do anything but copy
             subprocess.Popen(["cp", infile, outfile])
             return outfile
 
+        print infile
         if ext not in EXTENSION_TO_LANGUAGE:
             raise Exception("Cannot convert file with extension %s" % ext)
 
@@ -105,9 +125,16 @@ class PDFConverter(object):
     def convert_code(self, infile, outfile, name, language):
         with open(infile) as inf:
             txt = inf.read()
-        infile_n = re.split("\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d_", infile)[1]
-        latex_txt = LATEX_PROGRAMMING_TEMPLATE % (name,
-                                infile_n.replace("_", "\\_"), language, txt)
+        print infile
+        infile_n = re.split("\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d",
+                                infile)[1][1:].replace("_", "\\_")
+
+        if language == "verbatim":
+            # special case
+            latex_txt = VERBATIM_TEMPLATE % (name, infile_n, txt)
+        else:
+            latex_txt = LATEX_PROGRAMMING_TEMPLATE % (name,
+                                infile_n, language, txt)
         tempfile = self.file_in_working_directory(infile, "tex")
         with open(tempfile, "w") as temp_outf:
             temp_outf.write(latex_txt)
