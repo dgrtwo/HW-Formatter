@@ -9,6 +9,7 @@ setup(name="HWFormatter",
                     "into PDFs",
       packages=["HWFormatter"],
       package_dir={"HWFormatter": os.path.join("src", "HWFormatter")},
-      version="0.1",
+      install_requires=["pyPdf"],
+      version="0.2",
       scripts=[os.path.join("scripts", "format_HW")],
       )
