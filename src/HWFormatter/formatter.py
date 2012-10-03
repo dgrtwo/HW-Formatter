@@ -190,8 +190,3 @@ class HWFolder(object):
 
         for h in self.HWs:
             h.write(outfolder, file_order)
-
-if __name__ == "__main__":
-    [infolder, outfolder] = sys.argv[1:]
-    f = HWFolder(infolder, ["txt", "fasta"])
-    f.write(outfolder)

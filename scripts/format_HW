@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+"""
+Format HW from a folder downloaded from Blackboard into a folder of PDFs,
+one for each student.
+"""
+
+import sys
+
+from HWFormatter import formatter
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print "Usage: format_HW infolder outfolder"
+        sys.exit(1)
+
+    [infolder, outfolder] = sys.argv[1:]
+    f = formatter.HWFolder(infolder, ["txt", "fasta"])
+    f.write(outfolder)
