@@ -39,9 +39,9 @@ LATEX_PROGRAMMING_TEMPLATE = r"""
 \definecolor{listinggray}{gray}{0.9}
 \definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
 \lstset{
-	backgroundcolor=\color{lbcolor},
-	tabsize=4,
-	rulecolor=,
+    backgroundcolor=\color{lbcolor},
+    tabsize=4,
+    rulecolor=,
         basicstyle=\scriptsize,
         upquote=true,
         aboveskip={1.5\baselineskip},
@@ -165,7 +165,7 @@ class HW(object):
         # concatenate
         output = pyPdf.PdfFileWriter()
         for p in PDFs:
-            append_pdf(pyPdf.PdfFileReader(file(p,"rb")), output)
+            append_pdf(pyPdf.PdfFileReader(file(p, "rb")), output)
         output.write(file(outfile, "wb"))
 
 
