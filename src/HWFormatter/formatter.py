@@ -6,9 +6,13 @@ PDFs
 import sys
 import os
 import re
+import pipes
 import subprocess
 import collections
 import warnings
+import itertools
+import shutil
+from datetime import datetime
 
 import pyPdf
 
@@ -118,8 +122,6 @@ class PDFConverter(object):
             subprocess.Popen(["cp", infile, outfile])
             return outfile
 
-        print infile
-        print ext
         if ext not in EXTENSION_TO_LANGUAGE:
             warnings.warn("Cannot convert file with extension %s" % ext)
             return None
@@ -130,7 +132,6 @@ class PDFConverter(object):
     def convert_code(self, infile, name, language):
         with open(infile) as inf:
             txt = inf.read()
-        print infile
         infile_n = re.split("\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d",
                                 infile)[1][1:].replace("_", "\\_")
 
@@ -155,12 +156,33 @@ class PDFConverter(object):
         return outfile
 
 
+class HWFile(object):
+    def __init__(self, f, allowed_names=None):
+        # given an input file
+        self.file = f
+        self.extension = os.path.splitext(f)[1][1:]
+
+        filename = os.path.split(f)[-1]
+
+        self.user = filename.split("_")[1]
+        self.date = datetime.strptime(filename.split("_")[3], '%Y-%m-%d-%H-%M-%S')
+        self.filename = re.split("\-\d\d\-\d\d\-\d\d\-\d\d\-\d\d_", f)[1]
+
+
 class HW(object):
     """Represents a single student's homework"""
     def __init__(self, name, infiles, converter):
         """Given the name of a student, a list of files, and a converter"""
         self.name = name
-        self.infiles = infiles
+
+        # get only the most recent of each file
+        hw_files = [HWFile(f) for f in infiles]
+        hw_files.sort(key=lambda f: f.filename)
+        filtered_infiles = [max(g, key=lambda f: f.date).file
+                                for k, g in itertools.groupby(hw_files,
+                                                    key=lambda f: f.filename)]
+
+        self.infiles = filtered_infiles
         self.converter = converter
 
     def write(self, pdf_outfolder, file_order=None):
@@ -171,15 +193,18 @@ class HW(object):
             return
         # turn each file into a PDF
         PDFs = [self.converter.convert(f, self.name) for f in self.infiles]
-        print PDFs
         PDFs = filter(None, PDFs)  # filter out those that couldn't convert
-        print PDFs
-        # concatenate
-        output = pyPdf.PdfFileWriter()
-        for p in PDFs:
-            print p
-            append_pdf(pyPdf.PdfFileReader(file(p, "rb")), output)
-        output.write(file(outfile, "wb"))
+
+        if len(PDFs) == 1:
+            # just copy the file over
+            # for some reason, shutil.copy creates a corrupt PDF
+            os.system("cp %s %s" % (pipes.quote(PDFs[0]), pipes.quote(outfile)))
+        else:
+            # concatenate
+            output = pyPdf.PdfFileWriter()
+            for p in PDFs:
+                append_pdf(pyPdf.PdfFileReader(file(p, "rb")), output)
+            output.write(file(outfile, "wb"))
 
 
 class HWFolder(object):
@@ -188,7 +213,6 @@ class HWFolder(object):
         c = PDFConverter("WORKING_DIRECTORY")
 
         by_student = collections.defaultdict(list)
-        print os.listdir(infolder), infolder
         for f in os.listdir(infolder):
             # first check if we should ignore this extension
             if ignore_exts and os.path.splitext(f)[1][1:] in ignore_exts:
