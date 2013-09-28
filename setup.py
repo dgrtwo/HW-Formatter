@@ -1,5 +1,5 @@
 import os
-from distutils.core import setup
+from setuptools import setup
 
 setup(name="HWFormatter",
       author="David Robinson",
@@ -10,6 +10,6 @@ setup(name="HWFormatter",
       packages=["HWFormatter"],
       package_dir={"HWFormatter": os.path.join("src", "HWFormatter")},
       install_requires=["pyPdf"],
-      version="0.2",
+      version="0.3",
       scripts=[os.path.join("scripts", "format_HW")],
       )

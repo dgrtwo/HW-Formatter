@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import collections
+import warnings
 
 import pyPdf
 
@@ -78,9 +79,10 @@ LATEX_PROGRAMMING_TEMPLATE = r"""
 
 
 # dictionary of extensions that this supports and the language of each
-EXTENSION_TO_LANGUAGE = {'cc': 'C++', 'c': 'C', 'R': 'R', 'php': 'PHP',
-                         'rb': 'Ruby', 'cpp': 'C++', 'py': 'python',
-                         'pl': 'Perl', 'java': 'Java', 'txt': 'verbatim'}
+EXTENSION_TO_LANGUAGE = {'cc': 'C++', 'c': 'C', 'R': 'R', 'r': 'R',
+                         'php': 'PHP', 'rb': 'Ruby', 'cpp': 'C++',
+                         'py': 'python', 'pl': 'Perl', 'java': 'Java',
+                         'txt': 'verbatim'}
 
 
 def append_pdf(input, output):
@@ -111,18 +113,21 @@ class PDFConverter(object):
 
         if ext.lower() == "pdf":
             # Already in PDF format- no need to do anything but copy
+            # also add a marker in case there's a name conflict
+            outfile = outfile[:-4] + "__" + outfile[-4:]
             subprocess.Popen(["cp", infile, outfile])
             return outfile
 
         print infile
+        print ext
         if ext not in EXTENSION_TO_LANGUAGE:
-            raise Exception("Cannot convert file with extension %s" % ext)
+            warnings.warn("Cannot convert file with extension %s" % ext)
+            return None
 
         language = EXTENSION_TO_LANGUAGE[ext]
-        self.convert_code(infile, outfile, name, language)
-        return outfile
+        return self.convert_code(infile, name, language)
 
-    def convert_code(self, infile, outfile, name, language):
+    def convert_code(self, infile, name, language):
         with open(infile) as inf:
             txt = inf.read()
         print infile
@@ -135,7 +140,8 @@ class PDFConverter(object):
         else:
             latex_txt = LATEX_PROGRAMMING_TEMPLATE % (name,
                                 infile_n, language, txt)
-        tempfile = self.file_in_working_directory(infile, "tex")
+        tempfile = self.file_in_working_directory(infile.replace(" ", "_"), "tex")
+        outfile = tempfile[:-4] + ".pdf"
         with open(tempfile, "w") as temp_outf:
             temp_outf.write(latex_txt)
 
@@ -160,11 +166,18 @@ class HW(object):
     def write(self, pdf_outfolder, file_order=None):
         """Given a folder to write to, and optionally the order of files"""
         outfile = os.path.join(pdf_outfolder, self.name + ".pdf")
+        if os.path.exists(outfile):
+            # already exists
+            return
         # turn each file into a PDF
         PDFs = [self.converter.convert(f, self.name) for f in self.infiles]
+        print PDFs
+        PDFs = filter(None, PDFs)  # filter out those that couldn't convert
+        print PDFs
         # concatenate
         output = pyPdf.PdfFileWriter()
         for p in PDFs:
+            print p
             append_pdf(pyPdf.PdfFileReader(file(p, "rb")), output)
         output.write(file(outfile, "wb"))
 
@@ -175,6 +188,7 @@ class HWFolder(object):
         c = PDFConverter("WORKING_DIRECTORY")
 
         by_student = collections.defaultdict(list)
+        print os.listdir(infolder), infolder
         for f in os.listdir(infolder):
             # first check if we should ignore this extension
             if ignore_exts and os.path.splitext(f)[1][1:] in ignore_exts:
@@ -189,4 +203,7 @@ class HWFolder(object):
             os.mkdir(outfolder)
 
         for h in self.HWs:
-            h.write(outfolder, file_order)
+            try:
+                h.write(outfolder, file_order)
+            except KeyboardInterrupt:
+                raise
