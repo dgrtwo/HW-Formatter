@@ -86,7 +86,8 @@ LATEX_PROGRAMMING_TEMPLATE = r"""
 EXTENSION_TO_LANGUAGE = {'cc': 'C++', 'c': 'C', 'R': 'R', 'r': 'R',
                          'php': 'PHP', 'rb': 'Ruby', 'cpp': 'C++',
                          'py': 'python', 'pl': 'Perl', 'java': 'Java',
-                         'txt': 'verbatim'}
+                         'txt': 'verbatim', 'Rnw': 'verbatim',
+                         'Rmd': 'verbatim'}
 
 
 def append_pdf(input, output):
